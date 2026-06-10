@@ -1,0 +1,475 @@
+{
+  "name": "DocuGen",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a senior software engineer.\n\nAnalyse the following source code and explain:\n\n1. Purpose of the code\n2. Main functions/classes\n3. Inputs\n4. Outputs\n5. Step-by-step working\n6. Beginner-friendly explanation\n\nCode:\n\n{{ $json.data }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        560,
+        352
+      ],
+      "id": "2627ec8e-be89-4629-9de3-df31d508eaf3",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        560,
+        592
+      ],
+      "id": "53f64aa3-93ff-4c9d-879b-e3a639fd1478",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "LBAs0PLUlTccu1g7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1552,
+        0
+      ],
+      "id": "e69ac87f-2623-4ff5-87ea-0a259619d98b",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "list",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.owner }}"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $json.repo }}"
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        0
+      ],
+      "id": "c18ea077-757d-439d-9a72-5bcde1dff1c2",
+      "name": "List files",
+      "webhookId": "d194a382-9175-4715-9ba5-ab46cb65f0ab",
+      "credentials": {
+        "githubApi": {
+          "id": "AHdaooFT2Q2sxN45",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6282c122-d00c-46cf-be2c-aacb59799045",
+              "name": "repo-url",
+              "value": "={{ $json.body.repoUrl }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        0
+      ],
+      "id": "ff76b99f-0fbf-41ab-bb78-e89b8c75500b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "const repoUrl = $input.first().json['repo-url'];\n\nconst match = repoUrl.match(/github\\.com\\/([^\\/]+)\\/([^\\/]+?)(\\.git)?$/);\n\nif (!match) {\n  throw new Error(\"Invalid GitHub URL: \" + repoUrl);\n}\n\nconst owner = match[1];\nconst repo = match[2];\n\nreturn [{\n  json: {\n    repoUrl: repoUrl,\n    owner: owner,\n    repo: repo\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        0
+      ],
+      "id": "9911e729-f7e0-4178-8dea-f5fbfdb95235",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "get",
+        "owner": {
+          "__rl": true,
+          "value": "sushmabhushan-93",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "GenAI-doc-generator",
+          "mode": "name"
+        },
+        "filePath": "={{$json.path  }}",
+        "additionalParameters": {}
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1328,
+        0
+      ],
+      "id": "da112c91-1b62-4abd-aa34-cdd71cff9f0c",
+      "name": "Get a file",
+      "webhookId": "52e5d22c-7642-410f-8e4c-295b67632713",
+      "credentials": {
+        "githubApi": {
+          "id": "AHdaooFT2Q2sxN45",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "maxItems": 5
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        0
+      ],
+      "id": "888c031f-ec75-4e6f-ad2b-ddaa23a35f3f",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a technical documentation expert.\n\nUsing the following code analysis, generate professional documentation in Markdown format.\n\nInclude:\n\n# Project Documentation\n\n## Overview\nDescribe what the project does.\n\n## Main Components\nExplain the important files, classes and functions.\n\n## Inputs\nList inputs accepted by the code.\n\n## Outputs\nDescribe outputs generated.\n\n## Workflow\nExplain step-by-step how the application works.\n\n## Beginner Explanation\nExplain the project in simple terms for a beginner.\n\nCode Analysis:\n\n{{$json.output}}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1168,
+        352
+      ],
+      "id": "d14d0c71-1c6c-4e7c-a01f-16261cbf511a",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "sendTo": "sushmabhushan317@gmail.com",
+        "subject": "AI Code Documentation Generated ✅",
+        "message": "=<h2>AI Documentation Generated Successfully</h2>\n\n<p>Your code documentation has been automatically generated and saved to Google Drive.</p>\n\n<p><strong>File Name:</strong> documentation.md</p>\n\n<p><strong>View File:</strong> <a href=\"{{ $json.webViewLink }}\">Click here to open in Google Drive</a></p>\n\n<p><strong>Download File:</strong> <a href=\"{{ $json.webContentLink }}\">Click here to download</a></p>\n\n<br>\n<p>This was generated automatically by your n8n GenAI pipeline.</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1168,
+        848
+      ],
+      "id": "0aaefb9c-6d36-49e8-9a5f-1f8a289733d5",
+      "name": "Send a message",
+      "webhookId": "8ea277ab-dbfa-4421-975d-3b8b2d25e8ec",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "J6stCgBEhVFfPImS",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1168,
+        608
+      ],
+      "id": "3f3f7e04-2edb-49ec-8039-002cfd46d624",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "LBAs0PLUlTccu1g7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "documentation.md",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        768,
+        848
+      ],
+      "id": "3caa5fd7-fb33-4c62-9e66-ccf28e09783a",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "rVQSzk4GVHegaDYq",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.text;\n\nconst binaryData = await this.helpers.prepareBinaryData(\n  Buffer.from(text, 'utf-8'),\n  'documentation.md',\n  'text/markdown'\n);\n\nreturn [{\n  json: {},\n  binary: {\n    data: binaryData\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        848
+      ],
+      "id": "e1e071db-a9e7-4645-a66c-251d7f7f0ed4",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "9fe50740-da5c-4dee-8a8f-78ea18177553",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "5a8fcdc6-d4ee-4ade-8de1-260942531037",
+      "name": "Webhook",
+      "webhookId": "9fe50740-da5c-4dee-8a8f-78ea18177553"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"documentation\": \"={{ $('Basic LLM Chain').item.json.text }}\",\n  \"driveLink\": \"={{ $('Upload file').item.json.webViewLink }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1600,
+        848
+      ],
+      "id": "ae70a588-1db2-4202-9ac9-638935fe2464",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List files": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "List files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d120fa01-11cb-48b6-8a70-d028b518f116",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3f2e88604d43587eaf4c8c95c6e179ea3c9bcde76979846b52a9af1c55508fd0"
+  },
+  "id": "G0HqtGxCagPGpwuI",
+  "tags": []
+}
